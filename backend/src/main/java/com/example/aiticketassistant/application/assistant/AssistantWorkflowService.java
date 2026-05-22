@@ -236,7 +236,7 @@ public class AssistantWorkflowService {
     private boolean isCatalogFactQuestion(String value) {
         return containsAny(value,
                 "商品目录", "服装目录", "商品编号", "编号", "价格", "多少钱", "多少元", "刚好",
-                "便宜", "更便宜", "低于", "小于", "少于", "以内", "不超过", "预算", "预算有限", "哪几种", "哪些", "有什么")
+                "便宜", "最便宜", "最贵", "更便宜", "低于", "小于", "少于", "以内", "不超过", "预算", "预算有限", "哪几种", "哪些", "有什么")
                 && containsAny(value, "衣服", "服装", "商品", "T恤", "衬衫", "牛仔裤", "卫衣", "连衣裙", "夹克", "半身裙", "Polo", "毛衣", "大衣");
     }
 

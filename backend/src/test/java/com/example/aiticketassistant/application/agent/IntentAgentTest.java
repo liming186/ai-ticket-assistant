@@ -68,6 +68,37 @@ class IntentAgentTest {
     }
 
     @Test
+    void cheapestCatalogQuestionCreatesKnowledgeSearchToolCall() {
+        AiClientPort fakeAi = request -> AiResponse.fallback("{} ");
+        IntentAgent agent = new IntentAgent(fakeAi, new ObjectMapper());
+
+        IntentResult result = agent.analyze(
+                new WorkflowContext("s", "CUST-1001", null, "价格最便宜的衣服是哪一件"),
+                "");
+
+        assertThat(result.toolCalls()).hasSize(1);
+        assertThat(result.toolCalls().get(0).tool()).isEqualTo(ToolNames.SEARCH_KNOWLEDGE);
+    }
+
+    @Test
+    void purchaseIntentOverridesModelKnowledgeSearchToolCall() {
+        AiClientPort fakeAi = request -> AiResponse.fallback("""
+                {"intent":"KNOWLEDGE_QA","title":"商品知识查询","priority":"MEDIUM","confidence":0.95,"tool_calls":[{"tool":"SEARCH_KNOWLEDGE","arguments":{"query":"我要买黑色连帽卫衣","limit":5}}]}
+                """);
+        IntentAgent agent = new IntentAgent(fakeAi, new ObjectMapper());
+
+        IntentResult result = agent.analyze(
+                new WorkflowContext("s", "CUST-1001", null, "我要买黑色连帽卫衣"),
+                "");
+
+        assertThat(result.toolCalls()).hasSize(1);
+        assertThat(result.toolCalls().get(0).tool()).isEqualTo(ToolNames.CREATE_ORDER);
+        assertThat(result.toolCalls().get(0).arguments())
+                .containsEntry("productId", "CLOTH-HOODIE-004")
+                .containsEntry("quantity", 1);
+    }
+
+    @Test
     void purchaseSynonymStillCreatesOrderToolCall() {
         AiClientPort fakeAi = request -> AiResponse.fallback("{} ");
         IntentAgent agent = new IntentAgent(fakeAi, new ObjectMapper());

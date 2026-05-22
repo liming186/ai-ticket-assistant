@@ -69,6 +69,10 @@ public class IntentAgent {
                     }
                 }
             }
+            List<ToolCall> purchaseCalls = purchaseToolCalls(context.userMessage());
+            if (!purchaseCalls.isEmpty()) {
+                return new IntentResult(IntentType.GENERAL_SUPPORT, "安全下单确认", priority, Math.max(confidence, 0.9), purchaseCalls);
+            }
             if (toolCalls.isEmpty()) {
                 toolCalls = heuristicToolCalls(intent, title, priority, context);
             }
@@ -93,11 +97,11 @@ public class IntentAgent {
         if (isOrderListRequest(message)) {
             return IntentType.QUERY_ORDER;
         }
-        if (isCatalogFactQuestion(message)) {
-            return IntentType.KNOWLEDGE_QA;
-        }
         if (hasPurchaseIntent(message) && extractProductId(message) != null) {
             return IntentType.GENERAL_SUPPORT;
+        }
+        if (isCatalogFactQuestion(message)) {
+            return IntentType.KNOWLEDGE_QA;
         }
         if (message.contains("创建") || message.contains("工单")) {
             return IntentType.CREATE_TICKET;
@@ -120,17 +124,14 @@ public class IntentAgent {
             calls.add(new ToolCall(ToolNames.QUERY_ORDER, Map.of("customerId", context.customerId())));
             return calls;
         }
+        List<ToolCall> purchaseCalls = purchaseToolCalls(context.userMessage());
+        if (!purchaseCalls.isEmpty()) {
+            return purchaseCalls;
+        }
         if (isCatalogFactQuestion(context.userMessage())) {
             calls.add(new ToolCall(ToolNames.SEARCH_KNOWLEDGE, Map.of(
                     "query", context.userMessage(),
                     "limit", 5)));
-            return calls;
-        }
-        String productId = extractProductId(context.userMessage());
-        if (hasPurchaseIntent(context.userMessage()) && productId != null) {
-            calls.add(new ToolCall(ToolNames.CREATE_ORDER, Map.of(
-                    "productId", productId,
-                    "quantity", extractQuantity(context.userMessage()))));
             return calls;
         }
         if (intent == IntentType.CREATE_TICKET) {
@@ -165,11 +166,21 @@ public class IntentAgent {
                 || value.contains("展示") && value.contains("订单");
     }
 
+    private List<ToolCall> purchaseToolCalls(String message) {
+        String productId = extractProductId(message);
+        if (!hasPurchaseIntent(message) || productId == null) {
+            return List.of();
+        }
+        return List.of(new ToolCall(ToolNames.CREATE_ORDER, Map.of(
+                "productId", productId,
+                "quantity", extractQuantity(message))));
+    }
+
     private boolean isCatalogFactQuestion(String message) {
         String value = message == null ? "" : message;
         return containsAny(value,
                 "商品目录", "服装目录", "商品编号", "编号", "价格", "多少钱", "多少元", "刚好",
-                "便宜", "更便宜", "低于", "小于", "少于", "以内", "不超过", "预算", "预算有限", "哪几种", "哪些", "有什么")
+                "便宜", "最便宜", "最贵", "更便宜", "低于", "小于", "少于", "以内", "不超过", "预算", "预算有限", "哪几种", "哪些", "有什么")
                 && containsAny(value, "衣服", "服装", "商品", "T恤", "衬衫", "牛仔裤", "卫衣", "连衣裙", "夹克", "半身裙", "Polo", "毛衣", "大衣");
     }
 
