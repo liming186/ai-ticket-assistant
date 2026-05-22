@@ -1,0 +1,79 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ai-ticket-mysql
+    environment:
+      MYSQL_DATABASE: ai_ticket_assistant
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ai-ticket-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ai-ticket-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ai_ticket_assistant?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      CHROMA_BASE_URL: http://chromadb:8000
+      CORS_ALLOWED_ORIGINS: http://localhost:15173,http://127.0.0.1:15173,http://localhost:5173,http://127.0.0.1:5173
+      AI_PROVIDER: ${AI_PROVIDER:-qwen}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen-plus}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-7}
+      ANTHROPIC_ENABLE_REAL_CLIENT: ${ANTHROPIC_ENABLE_REAL_CLIENT:-false}
+    ports:
+      - "18080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:18080
+    container_name: ai-ticket-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "15173:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  mysql-data:
+  chroma-data:

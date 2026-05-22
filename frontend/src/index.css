@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #070912;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(79, 70, 229, 0.22), transparent 34%),
+    radial-gradient(circle at 80% 10%, rgba(34, 211, 238, 0.16), transparent 30%),
+    linear-gradient(135deg, #070912 0%, #101528 55%, #070912 100%);
+  color: #E5EEF9;
+  overflow-x: hidden;
+}
+
+.glass {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(145deg, rgba(13, 17, 31, 0.86), rgba(17, 24, 42, 0.72));
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.typing-caret::after {
+  content: '|';
+  margin-left: 2px;
+  color: #7DD3FC;
+  animation: blink 0.9s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@keyframes traceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(10px, -8px, 0); }
+}
+
+.orb {
+  animation: drift 7s ease-in-out infinite;
+}

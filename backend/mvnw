@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+if command -v mvn >/dev/null 2>&1; then
+  exec mvn "$@"
+fi
+if command -v docker >/dev/null 2>&1; then
+  exec docker run --rm -v "$PWD":/workspace -w /workspace maven:3.9-eclipse-temurin-17 mvn "$@"
+fi
+echo "Maven is not installed. Install Maven or Docker, then rerun ./mvnw $*" >&2
+exit 127
